@@ -9,12 +9,14 @@ $( document ).ready(function() {
    
 
 
-	canvas = d3.select("canvas").on("touchmove mousemove", moved).node();
+	canvas = d3.select("canvas").node();//.on("touchmove mousemove", moved).node();
 	context = canvas.getContext("2d");
 	width = canvas.width;
 	height = canvas.height;
 
-	sites = d3.range(100).map(function(d) { return [Math.random() * width, Math.random() * height]; });
+	sites = d3.range(100).map(function( d ) { 
+		return [Math.random() * width, Math.random() * height]; 
+	});
 
 	voronoi = d3.voronoi().extent([[-1, -1], [width + 1, height + 1]]);
 
@@ -27,11 +29,15 @@ function redraw(){
 	var links = diagram.links();
 	var polygons = diagram.polygons();
 
+	
 	context.clearRect(0, 0, width, height);
+	
+	/*
 	context.beginPath();
 	drawCell(polygons[0]);
 	context.fillStyle = "#f00";
 	context.fill();
+	*/
 
 	context.beginPath();
 	for (var i = 0, n = polygons.length; i < n; ++i) drawCell(polygons[i]);
