@@ -4,6 +4,8 @@ var context = null;
 var width = null;
 var height = null;
 var sites = null;
+var polygons =  null;
+var links = null;
 
 $( document ).ready(function() {
    
@@ -26,8 +28,8 @@ $( document ).ready(function() {
 
 function redraw(){
 	var diagram = voronoi(sites);
-	var links = diagram.links();
-	var polygons = diagram.polygons();
+	links = diagram.links();
+	polygons = diagram.polygons();
 
 	
 	context.clearRect(0, 0, width, height);
@@ -39,23 +41,27 @@ function redraw(){
 	context.fill();
 	*/
 
+	// Desenha as areas
 	context.beginPath();
 	for (var i = 0, n = polygons.length; i < n; ++i) drawCell(polygons[i]);
 	context.strokeStyle = "#000";
 	context.stroke();
 
+	// desenha as linhas que ligam os pontos
 	context.beginPath();
 	for (var i = 0, n = links.length; i < n; ++i) drawLink(links[i]);
 	context.strokeStyle = "rgba(0,0,0,0.2)";
 	context.stroke();
-
+/*
 	context.beginPath();
 	drawSite(sites[0]);
 	context.fillStyle = "#fff";
 	context.fill();
-
+*/
+	
+	// Desenha os pontos
 	context.beginPath();
-	for (var i = 1, n = sites.length; i < n; ++i) drawSite(sites[i]);
+	for (var i = 0, n = sites.length; i < n; ++i) drawSite(sites[i]);
 	context.fillStyle = "#000";
 	context.fill();
 	context.strokeStyle = "#fff";
@@ -65,8 +71,8 @@ function redraw(){
 
 
 function moved() {
-	sites[0] = d3.mouse(this);
-	redraw();
+	//sites[0] = d3.mouse(this);
+	//redraw();
 }
 
 function drawSite(site) {
@@ -83,7 +89,7 @@ function drawCell(cell) {
 	if (!cell) return false;
 	context.moveTo(cell[0][0], cell[0][1]);
 	for (var j = 1, m = cell.length; j < m; ++j) {
-	context.lineTo(cell[j][0], cell[j][1]);
+		context.lineTo(cell[j][0], cell[j][1]);
 	}
 	context.closePath();
 	return true;
