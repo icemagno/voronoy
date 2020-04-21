@@ -1,3 +1,16 @@
+var west = -45;
+var south = -24;
+var east = -40;
+var north = -20;
+
+var width = 0;
+var height = 0;
+
+var minX = Infinity;
+var minY = Infinity;
+var maxX = -Infinity;
+var maxY = -Infinity;
+
 var voronoi = null;
 var canvas = null;
 var context = null;
@@ -6,91 +19,112 @@ var height = null;
 var sites = null;
 var polygons =  null;
 var links = null;
+var geomPoints = null;
+var projection = null;
+
+var geoGenerator = null;
+
 
 $( document ).ready(function() {
-   
-
-
-	canvas = d3.select("canvas").node();//.on("touchmove mousemove", moved).node();
-	context = canvas.getContext("2d");
+	canvas = d3.select('canvas').node();
+	context = canvas.getContext('2d');
 	width = canvas.width;
 	height = canvas.height;
 
-	sites = d3.range(100).map(function( d ) { 
-		return [Math.random() * width, Math.random() * height]; 
-	});
 
-	voronoi = d3.voronoi().extent([[-1, -1], [width + 1, height + 1]]);
+	d3.json('senario.json', function(err, json) {
+		var center = d3.geoCentroid(json);
 
-	redraw();
+		projection = d3.geoEquirectangular()
+			.scale(19000)
+			.center( center ); // geoOrthographic
+
+		
+		setaLimites( json );
+		main( json );
+	})
+
 
 });
 
-function redraw(){
-	var diagram = voronoi(sites);
-	links = diagram.links();
-	polygons = diagram.polygons();
 
-	
-	context.clearRect(0, 0, width, height);
-	
-	/*
-	context.beginPath();
-	drawCell(polygons[0]);
-	context.fillStyle = "#f00";
-	context.fill();
-	*/
+function main( json ){
 
-	// Desenha as areas
-	context.beginPath();
-	for (var i = 0, n = polygons.length; i < n; ++i) drawCell(polygons[i]);
-	context.strokeStyle = "#000";
-	context.stroke();
-
-	// desenha as linhas que ligam os pontos
-	context.beginPath();
-	for (var i = 0, n = links.length; i < n; ++i) drawLink(links[i]);
-	context.strokeStyle = "rgba(0,0,0,0.2)";
-	context.stroke();
-/*
-	context.beginPath();
-	drawSite(sites[0]);
-	context.fillStyle = "#fff";
-	context.fill();
-*/
-	
-	// Desenha os pontos
-	context.beginPath();
-	for (var i = 0, n = sites.length; i < n; ++i) drawSite(sites[i]);
-	context.fillStyle = "#000";
-	context.fill();
-	context.strokeStyle = "#fff";
-	context.stroke();	
-	
-}
-
-
-function moved() {
-	//sites[0] = d3.mouse(this);
-	//redraw();
-}
-
-function drawSite(site) {
-	context.moveTo(site[0] + 2.5, site[1]);
-	context.arc(site[0], site[1], 2.5, 0, 2 * Math.PI, false);
-}
-
-function drawLink(link) {
-	context.moveTo(link.source[0], link.source[1]);
-	context.lineTo(link.target[0], link.target[1]);
-}
-
-function drawCell(cell) {
-	if (!cell) return false;
-	context.moveTo(cell[0][0], cell[0][1]);
-	for (var j = 1, m = cell.length; j < m; ++j) {
-		context.lineTo(cell[j][0], cell[j][1]);
+	var poly = {
+	  type: 'Feature',
+	  properties: {},
+	  geometry: {
+		type: 'Polygon',
+		coordinates: []
+	  }
 	}
-	context.closePath();
-	return true;
+
+	var fc =  {
+	  "type": "FeatureCollection",
+	  "features": []
+	}
+	
+	geomPoints = json.features.map(feature => {
+		return feature.geometry.coordinates
+	});	
+
+	voronoi = d3.voronoi()
+		.extent([[minX, minY], [maxX, maxY]]);
+
+	var polygons = voronoi( geomPoints ).polygons();
+	
+	geoGenerator = d3.geoPath()
+		.projection(projection)
+		.context(context)
+		.pointRadius(2.5);	
+
+
+	polygons.forEach(p => {
+		let feature = JSON.parse( JSON.stringify( poly ) );
+		p.reverse().push( p[0] );
+		feature.geometry.coordinates.push( p );
+		fc.features.push( feature );
+	});
+
+	drawPolygons( fc );
+	drawPoints( json );
+	
 }
+
+function drawPolygons( fc ){
+	console.log( fc );
+	context.beginPath();
+	geoGenerator({type: 'FeatureCollection', features: fc.features})
+	context.stroke();	
+}
+
+function drawPoints( json ){
+	console.log( json );
+	context.beginPath();
+	geoGenerator({type: 'FeatureCollection', features: json.features})
+	context.stroke();
+}
+
+function setaLimites( json ){
+
+	json.features.forEach(feature => {
+		var c = feature.geometry.coordinates;
+		
+		if ( c[0] < minX ) {
+		  minX = c[0]
+		}
+		if ( c[0] > maxX ) {
+		  maxX = c[0]
+		}
+		if ( c[1] < minY ) {
+		  minY = c[1]
+		}
+		if ( c[1] > maxY ) {
+		  maxY = c[1]
+		}
+	});
+  
+	console.log(minX, minY, maxX, maxY);
+
+}	
+
